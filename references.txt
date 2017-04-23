@@ -1,0 +1,7 @@
+http://www.investopedia.com/updates/enron-scandal-summary/
+http://scikit-learn.org/
+http://stackoverflow.com/questions/22903267/what-is-tuning-in-machine-learning
+http://bl.ocks.org/dmenin/raw/d12a22521ad32cacc906/
+ttps://www.cs.cmu.edu/~./enron/
+https://discussions.udacity.com/
+https://en.wikipedia.org/wiki/Precision_and_recall

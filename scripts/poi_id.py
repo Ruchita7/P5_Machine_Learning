@@ -10,13 +10,11 @@ import numpy as np
 from feature_format import featureFormat, targetFeatureSplit
 from sklearn import cross_validation
 from sklearn.feature_selection import SelectKBest, f_classif
-from tester import dump_classifier_and_data
+from tester import dump_classifier_and_data,test_classifier
 from sklearn import preprocessing
 from copy import deepcopy
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -26,6 +24,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.model_selection import GridSearchCV
+from time import time
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
@@ -98,10 +97,9 @@ def identify_outlier(data_dict,point1Label, point2Label):
     matplotlib.pyplot.ylabel(point2Label)
     matplotlib.pyplot.show()
 
-#to be uncommented
-#identify_outlier(data_dict,"salary","bonus")
-#identify_outlier(data_dict,"total_payments","total_stock_value")
-#identify_outlier(data_dict,"exercised_stock_options","expenses")
+identify_outlier(data_dict,"salary","bonus")
+identify_outlier(data_dict,"total_payments","total_stock_value")
+identify_outlier(data_dict,"exercised_stock_options","expenses")
 
 ### Task 2: Remove outliers
 
@@ -221,7 +219,6 @@ for name, clf in zip(names, classifiers):
     clf.fit(features_train, labels_train)
     predictor = clf.predict(features_test)
     print clf
-    print "name: %s"%name
     accuracy = accuracy_score(labels_test,predictor)
     precision = precision_score(labels_test,predictor)
     recall = recall_score(labels_test,predictor)
@@ -241,8 +238,10 @@ for name, clf in zip(names, classifiers):
 # features_train, features_test, labels_train, labels_test = \
 #     train_test_split(features, labels, test_size=0.3, random_state=42)
 
+t0 = time()
+
 parameters = {'max_depth': [1,2,3,4,5,6,8,9,10],
-              'min_samples_split':[2,3,4,5],
+              'min_samples_split':[2,3,4,5,6,7,8],
               'min_samples_leaf':[1,2,3,4,5,6,7,8,9,10],
               'criterion':('gini', 'entropy')}
 dt_clf = DecisionTreeClassifier(random_state = 42)
@@ -251,14 +250,20 @@ clf = GridSearchCV(dt_clf, parameters,cv=cv, scoring = 'f1')
 clf.fit(features,labels)
 
 predictor = clf.predict(features_test)
-precision = precision_score(labels_test,predictor)
-print precision
-recall = recall_score(labels_test,predictor)
-print recall
-print f1_score(labels_test,predictor)
 dt_best_estimator=clf.best_estimator_
+precision = precision_score(labels_test,predictor)
+recall = recall_score(labels_test,predictor)
+f1_score=f1_score(labels_test,predictor)
+print "Precision:%f, Recall:%f, F1 score:%f, Best score:%f"%(precision,recall,f1_score,clf.best_score_)
 print dt_best_estimator
-print clf.best_score_
+print "processing time:", round(time()-t0, 3), "s"
+
+
+# Classifier validation
+##DecisionTreeClassifier Validation 1 (StratifiedShuffleSplit, folds = 1000)
+t0 = time()
+test_classifier(dt_best_estimator, my_dataset, my_features_list)
+print 'Processing time:', round(time() - t0, 3), 's'
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
