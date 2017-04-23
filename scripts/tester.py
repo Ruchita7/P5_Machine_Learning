@@ -12,6 +12,7 @@
 
 import pickle
 import sys
+import numpy as np
 from sklearn.cross_validation import StratifiedShuffleSplit
 sys.path.append("../tools/")
 from feature_format import featureFormat, targetFeatureSplit
@@ -43,7 +44,11 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
             labels_test.append( labels[jj] )
         
         ### fit the classifier using training set, and test on test set
-        clf.fit(features_train, labels_train)
+        #clf.fit(features_train, labels_train)
+        try:
+            clf.fit(features_train, labels_train)
+        except:
+            clf.fit(np.array(features_train), np.array(labels_train))
         predictions = clf.predict(features_test)
         for prediction, truth in zip(predictions, labels_test):
             if prediction == 0 and truth == 0:
