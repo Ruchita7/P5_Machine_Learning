@@ -143,8 +143,21 @@ def compute_messages_exchanged_poi(df):
 
 df["messages_with_poi"]=df.apply(compute_messages_exchanged_poi,axis=1)
 
-new_features_list=["fraction_from_poi","fraction_to_poi","messages_with_poi"]
-my_features_list = features_list+new_features_list
+#feature combinations and their impact on classifier
+#new_features_list=["fraction_from_poi","fraction_to_poi","messages_with_poi"]
+#new_features_list=["fraction_from_poi"]
+#new_features_list=["fraction_to_poi"]
+#new_features_list=["messages_with_poi"]
+#new_features_list=["fraction_from_poi","fraction_to_poi"]
+#new_features_list=["messages_with_poi","fraction_to_poi"]
+#new_features_list=["messages_with_poi","fraction_from_poi"]
+new_features_list=[]
+features_list_new = features_list+new_features_list
+
+# make a copy of features_list
+my_features_list = deepcopy(features_list_new)
+# remove 'poi' from features_list_new
+my_features_list.remove('poi')
 
 print "my features list:"
 print my_features_list
@@ -158,14 +171,9 @@ my_dataset = data_dict
 
 
 ### Extract features and labels from dataset for local testing
-data = featureFormat(my_dataset, features_list, sort_keys = True)
+data = featureFormat(my_dataset, my_features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
 
-
-# make a copy of features_list
-features_list_new = deepcopy(features_list)
-# remove 'poi' from features_list_new
-features_list_new.remove('poi')
 
 #select k best value using grid search cv/select k best
 
@@ -177,7 +185,7 @@ def select_k_best():
     ("clf", feature_select_clf)
     ])
     param_grid = {
-    "select__k": range(1,len(features_list)),
+    "select__k": range(1,len(my_features_list)),
     'select__score_func':[f_classif]
     }
 
@@ -193,12 +201,14 @@ def select_k_best():
     feature_scores = select_k_best.scores_
 
     for i in select_k_best.get_support(indices=True):
-        features_selected[features_list_new[i]] = feature_scores[i]
-        print "%s: %f" % (features_list_new[i], feature_scores[i])
+        features_selected[my_features_list[i]] = feature_scores[i]
 
-    return features_selected.keys()
+    return features_selected
 
-features_selected=select_k_best()
+features_selected_map=select_k_best()
+print "Features with scores:"
+print features_selected_map
+features_selected=features_selected_map.keys()
 print "optimal k value:%d" %len(features_selected)
 print 'The Selected Features Are :',features_selected
 
