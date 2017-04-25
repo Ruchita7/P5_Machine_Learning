@@ -8,8 +8,9 @@ import pandas
 import matplotlib.pyplot
 import numpy as np
 from feature_format import featureFormat, targetFeatureSplit
+from sklearn.pipeline import Pipeline
 from sklearn import cross_validation
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectKBest,  f_classif
 from tester import dump_classifier_and_data,test_classifier
 from sklearn import preprocessing
 from copy import deepcopy
@@ -143,8 +144,13 @@ def compute_messages_exchanged_poi(df):
 df["messages_with_poi"]=df.apply(compute_messages_exchanged_poi,axis=1)
 
 new_features_list=["fraction_from_poi","fraction_to_poi","messages_with_poi"]
-features_list = features_list+new_features_list
+my_features_list = features_list+new_features_list
 
+print "my features list:"
+print my_features_list
+
+print "features list:"
+print features_list
 
 ### Store to my_dataset for easy export below.
 data_dict = df.to_dict('index')
@@ -155,28 +161,46 @@ my_dataset = data_dict
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
 
-#Selecting top k=5-10 features
-
-def selectKfeatures(k,features_list):
-    k_best = SelectKBest(k=k)
-    k_best.fit_transform(features, labels)
-    scores = k_best.scores_
-    features_selected = {}
-    for i in k_best.get_support(indices=True):
-        features_selected[features_list[i]] = scores[i]
-        print "%s: %f" % (features_list[i], scores[i])
-    return features_selected.keys()
 
 # make a copy of features_list
 features_list_new = deepcopy(features_list)
 # remove 'poi' from features_list_new
 features_list_new.remove('poi')
 
-features_selected=[]
-for i in range(5,11):
-    print "\n%d Features selected"%i
-    features_selected=selectKfeatures(i,features_list_new)
+#select k best value using grid search cv/select k best
 
+def select_k_best():
+    feature_select_clf = GaussianNB()
+    select_k_best = SelectKBest()
+    pipe = Pipeline([
+    ("select", select_k_best),
+    ("clf", feature_select_clf)
+    ])
+    param_grid = {
+    "select__k": range(1,len(features_list)),
+    'select__score_func':[f_classif]
+    }
+
+    gs = GridSearchCV(pipe, param_grid)
+    gs.fit(features, labels)
+    print gs.best_params_
+    print gs.best_estimator_
+
+    features_selected = {}
+    features_k=gs.best_params_['select__k']
+    select_k_best = SelectKBest(f_classif, k=features_k)
+    select_k_best.fit_transform(features, labels)
+    feature_scores = select_k_best.scores_
+
+    for i in select_k_best.get_support(indices=True):
+        features_selected[features_list_new[i]] = feature_scores[i]
+        print "%s: %f" % (features_list_new[i], feature_scores[i])
+
+    return features_selected.keys()
+
+features_selected=select_k_best()
+print "optimal k value:%d" %len(features_selected)
+print 'The Selected Features Are :',features_selected
 
 my_features_list=target_label+features_selected
 print "Selected features: %s"%my_features_list
@@ -254,7 +278,7 @@ dt_best_estimator=clf.best_estimator_
 precision = precision_score(labels_test,predictor)
 recall = recall_score(labels_test,predictor)
 f1_score=f1_score(labels_test,predictor)
-print "Precision:%f, Recall:%f, F1 score:%f, Best score:%f"%(precision,recall,f1_score,clf.best_score_)
+print "Best score:%f"%clf.best_score_
 print dt_best_estimator
 print "processing time:", round(time()-t0, 3), "s"
 
